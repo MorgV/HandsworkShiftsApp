@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
+import { getShifts } from './src/api/shiftsApi';
 
 async function requestLocationPermission() {
   if (Platform.OS === 'android') {
@@ -26,12 +27,17 @@ export default function App() {
       const hasPermission = await requestLocationPermission();
       if (hasPermission) {
         Geolocation.getCurrentPosition(
-          pos => {
-            console.log(
-              'Координаты:',
-              pos.coords.latitude,
-              pos.coords.longitude,
-            );
+          async pos => {
+            const { latitude, longitude } = pos.coords;
+            console.log('Координаты:', latitude, longitude);
+
+            getShifts(55.7558, 37.6173) // мок так как в моем городе нет смен
+              .then(shifts => {
+                console.log('Список смен:', shifts);
+              })
+              .catch(err => {
+                console.error('Ошибка при получении смен:', err);
+              });
           },
           error => {
             console.error('Ошибка геолокации:', error);
