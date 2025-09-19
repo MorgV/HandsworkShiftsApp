@@ -1,8 +1,9 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { getShifts } from '../api/shiftsApi';
+import { Shift } from '../types/types';
 
 export const shiftStore = makeAutoObservable({
-  shifts: [] as any[], // массив смен
+  shifts: [] as Shift[], // массив смен
   loading: false,
   error: null as string | null,
 
@@ -22,5 +23,16 @@ export const shiftStore = makeAutoObservable({
         this.loading = false;
       });
     }
+  },
+
+  getShiftById(id: string) {
+    return this.shifts.find(s => s.id === id);
+  },
+  get isLoading(): boolean {
+    return this.loading;
+  },
+
+  get hasError(): boolean {
+    return this.error !== null;
   },
 });

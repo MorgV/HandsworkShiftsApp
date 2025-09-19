@@ -1,93 +1,49 @@
-// src/screens/ShiftListScreen.tsx
-import { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
+import { FlatList } from 'react-native';
 import { observer } from 'mobx-react-lite';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  Image,
-} from 'react-native';
 import { shiftStore } from '../stores/shiftStore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import ShiftCard from '../components/ShiftCard';
+import Loader from '../components/Loader';
+import ErrorMessage from '../components/ErrorMessage';
 
 const ShiftListScreen = observer(() => {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   useEffect(() => {
     shiftStore.fetchShifts();
   }, []);
 
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const handlePress = useCallback(
+    (id: string) => navigation.navigate('ShiftDetail', { shiftId: id }),
+    [navigation],
+  );
 
-  if (shiftStore.loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#4A90E2" />
-        <Text style={styles.loadingText}>Загрузка смен...</Text>
-      </View>
-    );
-  }
+  const renderShift = useCallback(
+    ({ item }: { item: (typeof shiftStore.shifts)[0] }) => (
+      <ShiftCard shift={item} onPress={() => handlePress(item.id)} />
+    ),
+    [handlePress],
+  );
 
-  if (shiftStore.error) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>{shiftStore.error}</Text>
-      </View>
-    );
-  }
+  if (shiftStore.isLoading) return <Loader text="Загрузка смен..." />;
+  if (shiftStore.hasError) return <ErrorMessage message={shiftStore.error!} />;
 
   return (
     <FlatList
-      data={shiftStore.shifts}
+      data={shiftStore.shifts.slice()}
       keyExtractor={item => item.id}
-      contentContainerStyle={{ padding: 12 }}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          style={styles.card}
-          activeOpacity={0.8}
-          onPress={() =>
-            navigation.navigate('ShiftDetail', { shiftId: item.id })
-          }
-        >
-          <Image source={{ uri: item.logo }} style={styles.logoSmall} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.company}>{item.companyName}</Text>
-            <Text style={styles.address}>{item.address}</Text>
-            <Text style={styles.date}>
-              {item.dateStartByCity} | {item.timeStartByCity} -{' '}
-              {item.timeEndByCity}
-            </Text>
-            <Text style={styles.price}>{item.priceWorker} ₽</Text>
-          </View>
-        </TouchableOpacity>
-      )}
+      renderItem={renderShift}
+      initialNumToRender={5}
+      maxToRenderPerBatch={5}
+      windowSize={7}
+      updateCellsBatchingPeriod={50}
+      removeClippedSubviews
     />
   );
-});
-
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 8, fontSize: 16, color: '#555' },
-  errorText: { color: 'red', fontSize: 16 },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 3,
-    gap: 12,
-  },
-  logoSmall: { width: 60, height: 60, borderRadius: 8 },
-  company: { fontSize: 18, fontWeight: '600', marginBottom: 4 },
-  address: { fontSize: 14, color: '#555' },
-  date: { fontSize: 14, color: '#777', marginVertical: 6 },
-  price: { fontSize: 16, fontWeight: 'bold', color: '#4A90E2' },
 });
 
 export default ShiftListScreen;
